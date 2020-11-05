@@ -52,4 +52,4 @@ class Simulator:
 
 if __name__ == '__main__':
     simulator = Simulator()
-    simulator.simulator_run()
+    simulator.run()
