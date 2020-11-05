@@ -23,7 +23,7 @@ class Simulator:
         self.DISPLAY = pygame.display.set_mode((sim_params['environment_width'] * TILE_SIZE,
                                                 sim_params['environment_height'] * TILE_SIZE))
 
-    def simulator_run(self):
+    def run(self):
         while self.environment.is_running:
             self.environment.step()
             for event in pygame.event.get():
@@ -35,6 +35,9 @@ class Simulator:
             pygame.display.update()
             self.DISPLAY.fill((0, 0, 0))
             time.sleep(1. / 1)
+
+    def reset(self):
+        print("The reset method isn't implemented yet")
 
     def draw_prey(self):
         for prey in self.environment.prey_list:
