@@ -11,9 +11,11 @@ class Agent:
         self.is_dead = False
         self.is_reproducing = False
 
-    def move_at_random(self):
+    def move(self, action = None):
         # Action numbers: 0 = STATIONARY, 1=UP, 2=RIGHT, 3=DOWN, 4=LEFT
-        action = random.randint(0, 4)
+        if action == None:
+            action = random.randint(0, 4)
+
         if (action == 1) and (self.position.Y > 0):
             self.position.Y -= 1
         elif (action == 2) and (self.position.X < sim_params['environment_width']):
@@ -44,6 +46,7 @@ class Prey(Agent):
         super().__init__(age, position, max_age)
         self.birth_rate = birth_rate
 
+
     def try_reproduce(self):
         r = random.randint(0, 100)
         if r <= self.birth_rate:
@@ -52,6 +55,16 @@ class Prey(Agent):
     def die(self):
         # print('A prey died')
         self.is_dead = True
+
+    def step(self, action = None):
+        self.age += 1
+        if action is None:
+            self.move()
+        else:
+            self.move(action)
+        out = self.try_reproduce()
+        out = out, self.will_die()
+        return out
 
 
 class Predator(Agent):

@@ -34,7 +34,7 @@ class Simulator:
             self.draw_predator()
             pygame.display.update()
             self.DISPLAY.fill((0, 0, 0))
-            time.sleep(1. / 1)
+            time.sleep(.1)
 
     def reset(self):
         print("The reset method isn't implemented yet")
