@@ -77,12 +77,12 @@ class Environment:
         # print("Preys dead: " + str(len(self.dead_prey)))
         # print("-----------------------------------------------------")
 
-        if env == "prey":
-            self.update_preys(random = False, actions = actions)
+        if env == "prey" or env == "multiagent":
+            self.update_preys()
         else:
             self.update_preys()
 
-        if env == "predator":
+        if env == "predator" or env == "multiagent":
             self.update_predators(random = False, actions = actions)
         else:
             self.update_predators()
@@ -197,6 +197,27 @@ class Environment:
 
         return closestPrey
 
+    def total_obs(self):
+        obs = {}
+        for p in self.prey_list:
+            closestPredator = self.getClosestPredator(p)
+            if closestPredator is None:
+                obs[p.id] = [p.age, 0, 0]
+            else:
+                obs[p.id] = [p.age, abs(closestPredator.position.X - p.position.X),
+                             abs(closestPredator.position.Y - p.position.Y)]
+        for p in self.dead_prey:
+            obs[p.id] = [0, 0, 0]
+        for p in self.predator_list:
+            closestPrey = self.getClosestPrey(p)
+            if closestPrey is None:
+                obs[p.id] = [p.age, p.energy_level, 0, 0]
+            else:
+                obs[p.id] = [p.age, p.energy_level, abs(closestPrey.position.X - p.position.X),
+                             abs(closestPrey.position.Y - p.position.Y)]
+        for p in self.dead_predator:
+            obs[p.id] = [0, 0, 0, 0]
+        return obs
 
     def prey_obs(self):
         obs = {}
@@ -224,6 +245,21 @@ class Environment:
             obs[p.id] = [0, 0, 0, 0]
         return obs
 
+    def total_rewards(self):
+        rewards = {}
+        # Reward is number of preys
+        for p in self.prey_list:
+            # rewards[p.id] = self.prey_reward
+            rewards[p.id] = len(self.prey_list)
+        for p in self.dead_prey:
+            rewards[p.id] = 0
+            # Reward is number of predators
+            for p in self.predator_list:
+                # rewards[p.id] = self.predator_reward
+                rewards[p.id] = len(self.predator_list)
+            for p in self.dead_predator:
+                rewards[p.id] = 0
+        return rewards
     def prey_rewards(self):
         rewards = {}
         #Reward is number of preys
@@ -243,6 +279,18 @@ class Environment:
         for p in self.dead_predator:
             rewards[p.id] = 0
         return rewards
+
+    def total_dones(self):
+        dones = {"__all__": self.is_prey_extinct() or self.is_predator_extinct()}
+        for p in self.prey_list:
+            dones[p.id] = p.is_dead
+        for p in self.dead_prey:
+            dones[p.id] = p.is_dead
+        for p in self.predator_list:
+            dones[p.id] = p.is_dead
+        for p in self.dead_predator:
+            dones[p.id] = p.is_dead
+        return dones
 
     def prey_dones(self):
         dones ={"__all__": self.is_prey_extinct() or self.is_predator_extinct()}
