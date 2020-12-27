@@ -14,7 +14,7 @@ def create_predator_env(env_config):
 
 if __name__ == "__main__":
     ray.init()
-    tune.register_env("preyEnv-v0", create_prey_env)
+    tune.register_env("preyEnv-v0", create_predator_env)
     ModelCatalog.register_custom_model("DQNModel", DQNModel)
 
     tune.run(
@@ -22,8 +22,9 @@ if __name__ == "__main__":
 
         # checkpoint_freq=10,
         checkpoint_at_end=True,
-        stop={"timesteps_total": 200000},
+        stop={"timesteps_total": 2000000},
         config={
+            "no_done_at_end": True,
             "num_gpus": 0,
             "num_workers": 1,
             "framework": "torch",

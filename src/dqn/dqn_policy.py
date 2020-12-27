@@ -41,7 +41,7 @@ class DQNPolicy(Policy):
         self.dqn_model = ModelCatalog.get_model_v2(
             obs_space=self.observation_space,
             action_space=self.action_space,
-            num_outputs=4,
+            num_outputs=5,
             name="DQNModel",
             model_config=self.config["dqn_model"],
             framework="torch",

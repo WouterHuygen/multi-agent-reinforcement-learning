@@ -5,8 +5,8 @@ import numpy as np
 
 from ray import tune
 from ray.rllib.models import ModelCatalog
-from dqn import DQNTrainer, DQNModel
-
+from src.dqn import DQNTrainer, DQNModel
+from src.PreyEnvironment import PreyEnv
 
 if __name__ == "__main__":
 
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     num_episodes = 1
 
     # Def env
-    env = gym.make(env_name)
+    env = PreyEnv
     print(folder + "/params.json")
 
     ray.init()

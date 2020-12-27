@@ -3,44 +3,55 @@ import math
 from src.Agent import Prey, Predator
 from src.Vector2D import Vector2D
 import random
+from src.SimulatorParameters import sim_params
 
 
 class Environment:
 
     def __init__(self, width, height, amount_of_prey, prey_max_age, prey_birth_rate, amount_of_hunters, hunter_max_age,
-                 hunter_energy_to_reproduce, hunter_energy_per_prey_eaten):
+                 hunter_energy_to_reproduce, hunter_energy_per_prey_eaten, init_energy):
         self.width = width
         self.height = height
-        self.amount_of_prey = amount_of_prey
+        self.max_amount_of_prey = amount_of_prey
         self.prey_max_age = prey_max_age
         self.prey_birth_rate = prey_birth_rate
-        self.amount_of_hunters = amount_of_hunters
+        self.max_amount_of_hunters = amount_of_hunters
         self.hunter_max_age = hunter_max_age
         self.hunter_energy_to_reproduce = hunter_energy_to_reproduce
         self.hunter_energy_per_prey_eaten = hunter_energy_per_prey_eaten
+        self.init_energy = init_energy
         self.predator_list = []
+        self.dead_predator = []
         self.prey_list = []
+        self.dead_prey = []
         self.amount_of_steps = 0
-        self.generate_environment()
         self.is_running = True
+        self.predator_reward = 0
+        self.prey_reward = 0
+        self.number_of_living_predators = 0
+        self.number_of_living_preys = 0
+        self.generate_environment()
 
     def generate_environment(self):
-        for j in range(self.amount_of_prey):
+        for j in range(int(sim_params["init_amount_of_prey"])):
             self.prey_list.append(self.generate_random_prey())
-        for i in range(self.amount_of_hunters):
+            self.number_of_living_preys += 1
+        for i in range(int(sim_params["init_amount_of_hunters"])):
             self.predator_list.append(self.generate_random_predator())
+            self.number_of_living_predators += 1
+
+
 
     def generate_random_prey(self):
         pos = Vector2D(random.randint(0, self.width),
                        random.randint(0, self.height))
         prey = Prey(0, pos, self.prey_max_age, self.prey_birth_rate)
-
         return prey
 
     def generate_random_predator(self):
         pos = Vector2D(random.randint(0, self.width),
                        random.randint(0, self.height))
-        predator = Predator(0, pos, self.hunter_max_age, 20, self.hunter_energy_to_reproduce,
+        predator = Predator(0, pos, self.hunter_max_age, self.init_energy, self.hunter_energy_to_reproduce,
                             self.hunter_energy_per_prey_eaten)
         return predator
 
@@ -51,34 +62,49 @@ class Environment:
 
     def reproduce_predator(self, predator):
         pos = Vector2D(predator.position.X, predator.position.Y)
-        predator = Predator(0, pos, self.hunter_max_age, 20, self.hunter_energy_to_reproduce,
+        predator = Predator(0, pos, self.hunter_max_age, self.init_energy, self.hunter_energy_to_reproduce,
                             self.hunter_energy_per_prey_eaten)
         return predator
 
     def step(self, env = None, actions = None):
         self.amount_of_steps += 1
-        print('Step: ', self.amount_of_steps)
+        # print("-----------------------------------------------------")
+        # print("NumberOfPredators: "+str(Predator.numberOfPredators))
+        # print("Predators Alive: "+str(len(self.predator_list)))
+        # print("Predators dead: "+str(len(self.dead_predator)))
+        # print("NumberOfPreys: " + str(Prey.numberOfPreys))
+        # print("Preys Alive: " + str(len(self.prey_list)))
+        # print("Preys dead: " + str(len(self.dead_prey)))
+        # print("-----------------------------------------------------")
 
         if env == "prey":
             self.update_preys(random = False, actions = actions)
         else:
-            self.update_preys(True)
+            self.update_preys()
 
         if env == "predator":
             self.update_predators(random = False, actions = actions)
         else:
-            self.update_predators(True)
+            self.update_predators()
 
         #if (self.is_prey_extinct()) or (self.is_predator_extinct()) or (self.is_overpopulated()):
         #    self.stop()
 
-        return self.is_prey_extinct() or self.is_predator_extinct() or self.is_overpopulated()
+        return self.is_prey_extinct() or self.is_predator_extinct()
 
     def reset(self):
-        self.stop()
+        #print("Resetting")
         self.predator_list = []
         self.prey_list = []
+        self.dead_prey = []
+        self.dead_predator = []
         self.amount_of_steps = 0
+        Prey.numberOfPreys = 0
+        Predator.numberOfPredators = 0
+        self.predator_reward = 0
+        self.prey_reward = 0
+        self.number_of_living_predators = 0
+        self.number_of_living_preys = 0
         self.generate_environment()
 
     def stop(self):
@@ -86,52 +112,64 @@ class Environment:
         self.is_running = False
 
     def update_preys(self, random = True, actions = None):
-        temp_prey_list = []
-        actionCtr = 0
-        while self.prey_list:
-            prey = self.prey_list.pop()
-            prey.dies_at_max_age()
-            prey.age += 1
-            if not prey.is_dead:
-                prey.try_reproduce()
-                if prey.is_reproducing:
-                    temp_prey_list.append(self.reproduce_prey(prey))
+        new_preys = []
+        dying_preys = []
+        for p in self.prey_list:
+            p.is_dead = self.prey_get_eaten(p) or (p.age >= self.prey_max_age)
+            p.age += 1
+            if not p.is_dead:
+                p.try_reproduce()
+                if p.is_reproducing and (self.number_of_living_preys < self.max_amount_of_prey):
+                    new_preys.append(self.reproduce_prey(p))
+                    self.number_of_living_preys += 1
                 if random:
-                    prey.move()
+                    p.move()
                 else:
-                    prey.move(actions["prey_"+str(actionCtr)])
+                    p.move(actions[p.id])
+            else:
+                dying_preys.append(p)
+                self.number_of_living_preys -= 1
 
-                temp_prey_list.append(prey)
-            actionCtr += 1
-        while temp_prey_list:
-            self.prey_list.append(temp_prey_list.pop())
+        for p in new_preys:
+            self.prey_list.append(p)
+
+        for p in dying_preys:
+            self.prey_list.remove(p)
+            self.dead_prey.append(p)
 
     def update_predators(self, random = True, actions = None):
-        temp_predator_list = []
-        actionCtr = 0
-        while self.predator_list:
-            predator = self.predator_list.pop()
-            predator.dies_at_max_age()
-            predator.dies_when_no_energy()
+        new_predators = []
+        dying_predators = []
+        for predator in self.predator_list:
+            predator.is_dead = (predator.energy_level <= 0) or (predator.age >= self.hunter_max_age)
             predator.age += 1
             predator.energy_level -= 1
             if not predator.is_dead:
-                self.try_eat_prey(predator)
+                if self.try_eat_prey(predator):
+                    predator.energy_level += self.hunter_energy_per_prey_eaten
                 if random:
                     predator.move()
                 else:
-                    if actions["predator_"+str(actionCtr)] == 5:
+                    if actions[predator.id] == 4:
                         predator.try_reproduce()
-                        if predator.is_reproducing:
-                            temp_predator_list.append(self.reproduce_predator(predator))
+                        if predator.is_reproducing and (self.number_of_living_predators < sim_params["max_amount_of_hunters"]):
+                            new_predators.append(self.reproduce_predator(predator))
+                            self.number_of_living_predators += 1
+                            predator.is_reproducing =  False
+                            self.predator_reward += 4
                     else:
-                        predator.move(actions["predator_"+str(actionCtr)])
-                temp_predator_list.append(predator)
-            actionCtr += 1
+                        predator.move(actions[predator.id])
+            else:
+                dying_predators.append(predator)
+                self.number_of_living_predators -= 1
 
-        while temp_predator_list:
-            self.predator_list.append(temp_predator_list.pop())
-        print(len(self.predator_list))
+        for p in new_predators:
+            self.predator_list.append(p)
+
+        for p in dying_predators:
+            self.predator_list.remove(p)
+            self.dead_predator.append(p)
+
 
     def getClosestPredator(self, prey):
         closestDistance = -1
@@ -162,79 +200,83 @@ class Environment:
 
     def prey_obs(self):
         obs = {}
-        prey_ctr  =0
         for p in self.prey_list:
             closestPredator = self.getClosestPredator(p)
-
             if closestPredator is None:
-                obs["prey_" + str(prey_ctr)] = [p.age, 0, 0]
+                obs[p.id] = [p.age, 0, 0]
             else:
-                obs["prey_"+str(prey_ctr)] = [p.age, abs(closestPredator.position.X - p.position.X), abs(closestPredator.position.Y - p.position.Y)]
-            prey_ctr += 1
+                obs[p.id] = [p.age, abs(closestPredator.position.X - p.position.X), abs(closestPredator.position.Y - p.position.Y)]
+        for p in self.dead_prey:
+             obs[p.id] = [0, 0, 0]
         return obs
 
     def predator_obs(self):
         obs = {}
-        predator_ctr = 0
         for p in self.predator_list:
             closestPrey = self.getClosestPrey(p)
             if closestPrey is None:
-                obs["predator_" + str(predator_ctr)] = [p.age, p.energy_level, 0, 0]
+                obs[p.id] = [p.age, p.energy_level, 0, 0]
             else:
-                obs["predator_"+str(predator_ctr)] = [p.age, p.energy_level, abs(closestPrey.position.X - p.position.X),
+                obs[p.id] = [p.age, p.energy_level, abs(closestPrey.position.X - p.position.X),
                             abs(closestPrey.position.Y - p.position.Y)]
-            predator_ctr += 1
+
+        for p in self.dead_predator:
+            obs[p.id] = [0, 0, 0, 0]
         return obs
 
     def prey_rewards(self):
         rewards = {}
-        prey_ctr = 0
         #Reward is number of preys
         for p in self.prey_list:
-            rewards["prey_"+str(prey_ctr)] = len(self.prey_list)
-            prey_ctr += 1
+            #rewards[p.id] = self.prey_reward
+            rewards[p.id] = len(self.prey_list)
+        for p in self.dead_prey:
+            rewards[p.id] = 0
         return rewards
 
     def predator_rewards(self):
         rewards = {}
-        predator_ctr = 0
         # Reward is number of predators
         for p in self.predator_list:
-            rewards["predator_"+str(predator_ctr)] = len(self.predator_list)
-            predator_ctr += 1
+            #rewards[p.id] = self.predator_reward
+            rewards[p.id] = len(self.predator_list)
+        for p in self.dead_predator:
+            rewards[p.id] = 0
         return rewards
 
     def prey_dones(self):
-        dones ={"__all__": self.is_prey_extinct() or self.is_predator_extinct() or self.is_overpopulated()}
-        prey_ctr = 0
-        # Reward is number of predators
+        dones ={"__all__": self.is_prey_extinct() or self.is_predator_extinct()}
         for p in self.prey_list:
-            dones["prey_"+str(prey_ctr)] = p.is_dead
-            prey_ctr += 1
+            dones[p.id] = p.is_dead
+        for p in self.dead_prey:
+            dones[p.id] = p.is_dead
         return dones
 
     def predator_dones(self):
-        dones = {"__all__": self.is_prey_extinct() or self.is_predator_extinct() or self.is_overpopulated()}
-        predator_ctr = 0
-        # Reward is number of predators
+        dones = {"__all__": self.is_prey_extinct() or self.is_predator_extinct()}
         for p in self.predator_list:
-            dones["predator_"+str(predator_ctr)] = p.is_dead
-            predator_ctr += 1
+            dones[p.id] = p.is_dead
+        for p in self.dead_predator:
+            dones[p.id] = p.is_dead
         return dones
 
     def try_eat_prey(self, predator):
-        temp_prey_list = []
-        while self.prey_list:
-            prey = self.prey_list.pop()
+        preyEaten = False
+        for prey in self.prey_list:
             if (predator.position.X-2 <= prey.position.X <= predator.position.X+2) and\
                     (predator.position.Y-2 <= prey.position.Y <= predator.position.Y+2):
-                prey.is_dead = True
-                # print('A prey was eaten')
-                predator.energy_level += predator.energy_per_prey_eaten
-            else:
-                temp_prey_list.append(prey)
-        while temp_prey_list:
-            self.prey_list.append(temp_prey_list.pop())
+                preyEaten = True
+                self.predator_reward += 1
+        return preyEaten
+
+    def prey_get_eaten(self, prey):
+        is_dead = False
+        for predator in self.predator_list:
+            if (predator.position.X-2 <= prey.position.X <= predator.position.X+2) and\
+                    (predator.position.Y-2 <= prey.position.Y <= predator.position.Y+2):
+                is_dead = True
+                self.prey_reward -= 1
+        return  is_dead
 
     def is_prey_extinct(self):
         if not self.prey_list:

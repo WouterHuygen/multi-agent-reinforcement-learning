@@ -6,7 +6,7 @@ import sys
 
 GREEN = (0, 100, 0)
 RED = (100, 0, 0)
-TILE_SIZE = 4
+TILE_SIZE = 6
 
 
 class Simulator:
@@ -18,7 +18,8 @@ class Simulator:
                                        sim_params['prey_birth_rate'],
                                        sim_params['amount_of_hunters'], sim_params['hunter_max_age'],
                                        sim_params['hunter_energy_to_reproduce'],
-                                       sim_params['hunter_energy_per_prey_eaten'])
+                                       sim_params['hunter_energy_per_prey_eaten'],
+                                       sim_params['hunter_init_energy'])
         pygame.init()
         self.DISPLAY = pygame.display.set_mode((sim_params['environment_width'] * TILE_SIZE,
                                                 sim_params['environment_height'] * TILE_SIZE))
