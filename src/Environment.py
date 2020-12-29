@@ -26,8 +26,8 @@ class Environment:
         self.dead_prey = []
         self.amount_of_steps = 0
         self.is_running = True
-        self.predator_reward = 0
         self.prey_reward = 0
+        self.predator_reward = 0
         self.number_of_living_predators = 0
         self.number_of_living_preys = 0
         self.generate_environment()
@@ -76,9 +76,8 @@ class Environment:
         # print("Preys Alive: " + str(len(self.prey_list)))
         # print("Preys dead: " + str(len(self.dead_prey)))
         # print("-----------------------------------------------------")
-
         if env == "prey" or env == "multiagent":
-            self.update_preys()
+            self.update_preys(random = False, actions = actions)
         else:
             self.update_preys()
 
@@ -116,6 +115,8 @@ class Environment:
         dying_preys = []
         for p in self.prey_list:
             p.is_dead = self.prey_get_eaten(p) or (p.age >= self.prey_max_age)
+            if self.prey_get_eaten(p):
+                self.prey_reward -= 1
             p.age += 1
             if not p.is_dead:
                 p.try_reproduce()
@@ -146,6 +147,7 @@ class Environment:
             predator.energy_level -= 1
             if not predator.is_dead:
                 if self.try_eat_prey(predator):
+                    self.predator_reward += 1
                     predator.energy_level += self.hunter_energy_per_prey_eaten
                 if random:
                     predator.move()
@@ -250,15 +252,15 @@ class Environment:
         # Reward is number of preys
         for p in self.prey_list:
             # rewards[p.id] = self.prey_reward
-            rewards[p.id] = len(self.prey_list)
+            rewards[p.id] = self.prey_reward
         for p in self.dead_prey:
-            rewards[p.id] = 0
+            rewards[p.id] = self.prey_reward
             # Reward is number of predators
-            for p in self.predator_list:
-                # rewards[p.id] = self.predator_reward
-                rewards[p.id] = len(self.predator_list)
-            for p in self.dead_predator:
-                rewards[p.id] = 0
+        for p in self.predator_list:
+            # rewards[p.id] = self.predator_reward
+            rewards[p.id] = self.predator_reward
+        for p in self.dead_predator:
+            rewards[p.id] = self.predator_reward
         return rewards
     def prey_rewards(self):
         rewards = {}

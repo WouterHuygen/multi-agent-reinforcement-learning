@@ -10,5 +10,5 @@ sim_params = {
     "hunter_energy_per_prey_eaten": 10,
     "hunter_init_energy": 40,     # A value between 0 and 30
     "hunter_max_age": 20,                   # A value between 0 and 50
-    "environment_width": 200,
-    "environment_height": 200}
+    "environment_width": 150,
+    "environment_height": 150}

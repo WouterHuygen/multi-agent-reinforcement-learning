@@ -30,6 +30,12 @@ if __name__ == "__main__":
             "framework": "torch",
             # "sample_batch_size": 50,
             "env": "MAEnv-v0",
+            "dqn_model": {
+                "custom_model": "DQNPredatorModel",
+                "custom_model_config": {
+                    "network_size": [32, 64, 32],
+                },  # extra options to pass to your model
+            },
 
             ########################################
             # Parameters Agent
@@ -60,6 +66,12 @@ if __name__ == "__main__":
             "framework": "torch",
             # "sample_batch_size": 50,
             "env": "MAEnv-v0",
+            "dqn_model": {
+                "custom_model": "DQNPreyModel",
+                "custom_model_config": {
+                    "network_size": [32, 64, 32],
+                },  # extra options to pass to your model
+            },
 
             ########################################
             # Parameters Agent
@@ -92,13 +104,13 @@ if __name__ == "__main__":
                            policy_config["predator_policy_config"]),
                 "prey": (dqn_prey_policy.DQNPreyPolicy,
                          MAE.observation_space_prey,
-                         MAE.observation_space_prey,
+                         MAE.action_space_prey,
                          policy_config["prey_policy_config"])}
 
 
     def policy_mapping_fn(agent_id):
-        if "hunter" in agent_id:
-            return "hunter"
+        if "predator" in agent_id:
+            return "predator"
         else:
             return "prey"
 

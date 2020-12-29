@@ -101,7 +101,7 @@ class DQNPreyPolicy(Policy):
                 self.epsilon = self.epsilon_min
             epsilon_log.append(self.epsilon)
             if np.random.random() < self.epsilon:
-                action_batch_t[index] = random.randint(0, self.action_shape-1)
+                action_batch_t[index] = random.randint(0, 4-1)
 
         action = action_batch_t.cpu().detach().tolist()
         return action, [], {"epsilon_log": epsilon_log}

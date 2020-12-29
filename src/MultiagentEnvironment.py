@@ -29,9 +29,10 @@ class MAEnvironment(gym.Env, MultiAgentEnv):
 
     def reset(self):
         print("Number of preys: "+str(len(self.environment.prey_list)))
+        print("Number of Predator: "+str(len(self.environment.predator_list)))
         self.environment.reset()
-        return self.environment.obs()
+        return self.environment.total_obs()
 
     def step(self, action):
         self.environment.step( env= "multiagent", actions = action)
-        return self.environment.obs(), self.environment.rewards(), self.environment.dones(), {}
+        return self.environment.total_obs(), self.environment.total_rewards(), self.environment.total_dones(), {}
